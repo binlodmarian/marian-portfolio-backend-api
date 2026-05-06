@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TokenType {
+  REFRESH
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String?
+  emailVerified DateTime? @map("email_verified")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  role          Role      @default(USER)
+  tokens        Token[]
+  tasks         Task[]
+}
+
+model Task {
+  id          String     @id @default(uuid())
+  title       String
+  description String?    @db.Text
+  status      TaskStatus @default(TODO)
+  dueDate     DateTime?
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Token {
+  id         String     @id @default(uuid())
+  type       TokenType
+  token      String     @unique
+  expiresAt  DateTime
+  createdAt  DateTime   @default(now())
+  consumedAt DateTime?
+  revokedAt  DateTime?
+
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+}
